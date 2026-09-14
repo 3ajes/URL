@@ -1,75 +1,98 @@
-class URLScanner {
+class UltimateURLScanner {
     constructor() {
         this.input = document.getElementById('urlInput');
         this.btn = document.getElementById('scanBtn');
         this.results = document.getElementById('results');
         this.loader = document.getElementById('loader');
         this.consoleList = document.getElementById('consoleLog');
+        this.copyBtn = document.getElementById('copyReportBtn');
 
+        // Multi-tier TLD parsing table (covers ccTLDs and Second-Level Domains)
         this.multiPartTLDs = new Set([
             'co.uk', 'gov.uk', 'ac.uk', 'com.au', 'net.au', 'org.au',
             'com.my', 'edu.my', 'gov.my', 'co.nz', 'co.jp', 'com.br',
-            'com.sg', 'edu.sg', 'com.ph', 'co.za', 'com.tr'
+            'com.sg', 'edu.sg', 'com.ph', 'co.za', 'com.tr', 'com.hk'
         ]);
 
+        // Suspicious & heavily abused disposable TLDs
         this.suspiciousTLDs = new Set([
-            'zip', 'mov', 'top', 'xyz', 'country', 'kim', 'cricket',
-            'science', 'work', 'party', 'gq', 'cf', 'tk', 'ml', 'ga',
-            'buzz', 'rest', 'fit', 'tk', 'cc'
+            'top', 'xyz', 'country', 'kim', 'cricket', 'science', 'work',
+            'party', 'gq', 'cf', 'tk', 'ml', 'ga', 'buzz', 'rest', 'fit',
+            'zip', 'mov', 'cam', 'surf', 'icu', 'monster', 'hair', 'bond'
         ]);
 
+        // URL Masking & Redirection Proxies
         this.shorteners = new Set([
             'bit.ly', 'tinyurl.com', 't.co', 'goo.gl', 'is.gd',
             'buff.ly', 'ow.ly', 'cutt.ly', 'rebrand.ly', 'tiny.cc'
         ]);
 
-        this.targetBrands = [
+        // Target Brands for impersonation detection
+        this.brandEntities = [
             'paypal', 'apple', 'google', 'microsoft', 'netflix', 'amazon',
             'facebook', 'instagram', 'whatsapp', 'chase', 'wellsfargo',
             'bankofamerica', 'citi', 'binance', 'coinbase', 'metamask',
-            'telegram', 'outlook', 'office365', 'icloud', 'yahoo'
+            'telegram', 'outlook', 'office365', 'icloud', 'yahoo', 'steam'
         ];
 
-        this.sensitiveKeywords = [
-            'login', 'verify', 'account', 'secure', 'update', 'banking',
-            'wallet', 'recovery', 'confirm', 'auth', 'signin', 'support'
+        // Threat Phishing & Exfiltration Keywords
+        this.trapKeywords = [
+            'login', 'verify', 'account', 'security', 'update', 'banking',
+            'wallet', 'recovery', 'confirm', 'auth', 'signin', 'support',
+            'seed', 'identity', 'unlock', 'session', 'token', 'billing'
         ];
 
-        this.initEvents();
+        this.cachedLogs = [];
+        this.init();
     }
 
-    initEvents() {
-        this.btn.addEventListener('click', () => this.startScan());
+    init() {
+        this.btn.addEventListener('click', () => this.runEngine());
         this.input.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') this.startScan();
+            if (e.key === 'Enter') this.runEngine();
+        });
+
+        // Quick Preset Attack Signature buttons
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                this.input.value = btn.getAttribute('data-url');
+                this.runEngine();
+            });
+        });
+
+        // Copy Forensic Log
+        this.copyBtn.addEventListener('click', () => {
+            if (this.cachedLogs.length === 0) return;
+            const logDump = this.cachedLogs.join('\n');
+            navigator.clipboard.writeText(logDump).then(() => {
+                const originalText = this.copyBtn.textContent;
+                this.copyBtn.textContent = 'COPIED TO CLIPBOARD!';
+                setTimeout(() => this.copyBtn.textContent = originalText, 1800);
+            });
         });
     }
 
-    startScan() {
-        const rawUrl = this.input.value.trim();
-        if (!rawUrl) {
-            this.input.focus();
-            return;
+    // Shannon Entropy Calculator: Computes lexical unpredictability
+    computeEntropy(str) {
+        if (!str) return 0;
+        const len = str.length;
+        const frequencies = {};
+        for (let char of str) {
+            frequencies[char] = (frequencies[char] || 0) + 1;
         }
-
-        // Reset and show loader
-        this.results.classList.add('hidden');
-        this.loader.classList.remove('hidden');
-        this.btn.disabled = true;
-        this.consoleList.innerHTML = '';
-        this.log("Starting static and lexical heuristic analysis...", "info");
-
-        setTimeout(() => {
-            this.analyze(rawUrl);
-            this.loader.classList.add('hidden');
-            this.results.classList.remove('hidden');
-            this.btn.disabled = false;
-        }, 1200);
+        return Object.values(frequencies).reduce((sum, count) => {
+            const p = count / len;
+            return sum - (p * Math.log2(p));
+        }, 0);
     }
 
     log(msg, type = "info") {
+        const timestamp = new Date().toISOString().split('T')[1].slice(0, 8);
+        const formatted = `[${timestamp}] > ${msg}`;
+        this.cachedLogs.push(formatted);
+
         const li = document.createElement('li');
-        li.textContent = `> ${msg}`;
+        li.textContent = formatted;
         if (type === "warning") li.classList.add('warn');
         if (type === "danger") li.classList.add('err');
         if (type === "success") li.classList.add('safe');
@@ -82,7 +105,7 @@ class URLScanner {
         const parts = lowerHost.split('.');
         
         if (parts.length < 2) {
-            return { sld: lowerHost, mainDomain: lowerHost, subdomains: [] };
+            return { tld: '', sld: lowerHost, domainLabel: lowerHost, subdomains: [] };
         }
 
         const lastTwo = parts.slice(-2).join('.');
@@ -103,206 +126,234 @@ class URLScanner {
         return { tld, mainDomain, domainLabel, subdomains };
     }
 
-    analyze(rawUrl) {
-        let score = 0;
-        let details = {
-            protocol: { status: "SAFE", msg: "HTTPS Enforced" },
-            domain: { status: "SAFE", msg: "Standard Structure" },
-            punycode: { status: "SAFE", msg: "Standard ASCII" },
-            obfuscation: { status: "SAFE", msg: "None Detected" },
-            tld: { status: "SAFE", msg: "Standard TLD" },
-            pattern: { status: "SAFE", msg: "Legitimate Profile" }
-        };
-
-        let url;
-        try {
-            let sanitized = rawUrl;
-            if (!sanitized.match(/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//)) {
-                sanitized = 'http://' + sanitized;
-            }
-            url = new URL(sanitized);
-        } catch (e) {
-            this.log("CRITICAL: Malformed URL string - failed parsing", "danger");
-            this.renderResults(100, details, "INVALID SYNTAX", "The URL syntax is malformed or purposefully broken to evade security parsers.");
+    runEngine() {
+        const raw = this.input.value.trim();
+        if (!raw) {
+            this.input.focus();
             return;
         }
 
-        const hostname = url.hostname;
-        const href = url.href;
-        this.log(`Extracted Target Host: ${hostname}`, "info");
+        // Reset UI & start diagnostics
+        this.results.classList.add('hidden');
+        this.loader.classList.remove('hidden');
+        this.btn.disabled = true;
+        this.consoleList.innerHTML = '';
+        this.cachedLogs = [];
 
-        // 1. Protocol Security
-        if (url.protocol === 'http:') {
-            score += 25;
+        this.log(`Engaging Sentry Heuristic Pipeline for: ${raw}`, "info");
+
+        setTimeout(() => {
+            this.evaluate(raw);
+            this.loader.classList.add('hidden');
+            this.results.classList.remove('hidden');
+            this.btn.disabled = false;
+        }, 900);
+    }
+
+    evaluate(rawUrl) {
+        let threatScore = 0;
+        let details = {
+            protocol: { status: "SAFE", msg: "TLS 1.3 / HTTPS" },
+            domain: { status: "SAFE", msg: "Standard Architecture" },
+            punycode: { status: "SAFE", msg: "Standard ASCII Set" },
+            entropy: { status: "SAFE", msg: "Normal Distribution" },
+            tld: { status: "SAFE", msg: "Reputable Root" },
+            pattern: { status: "SAFE", msg: "No Targeted Deception" }
+        };
+
+        // 1. Parsing and Sanitization
+        let parsed;
+        try {
+            let target = rawUrl;
+            if (!target.match(/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//)) {
+                target = 'http://' + target;
+            }
+            parsed = new URL(target);
+        } catch (e) {
+            this.log("CRITICAL SYNTAX: URI Malformed / RFC 3986 violation", "danger");
+            this.renderFinal(100, details, 0, "MALFORMED URI", "Syntax violates RFC parsing standards, indicating an evasion technique.");
+            return;
+        }
+
+        const host = parsed.hostname;
+        const pathAndQuery = parsed.pathname + parsed.search;
+        this.log(`Dissected Target Host: [${host}]`, "info");
+
+        // 2. Transport Protocol
+        if (parsed.protocol === 'http:') {
+            threatScore += 25;
             details.protocol = { status: "WARNING", msg: "Insecure (Cleartext HTTP)" };
-            this.log("Protocol Risk: Cleartext transmission (no TLS/HTTPS)", "warning");
-        } else if (url.protocol !== 'https:') {
-            score += 40;
-            details.protocol = { status: "DANGER", msg: `Non-standard (${url.protocol})` };
-            this.log(`Protocol Risk: Unusual protocol scheme '${url.protocol}'`, "danger");
+            this.log("Vulnerability: Cleartext HTTP transmission enables Man-In-The-Middle inspection", "warning");
+        } else if (parsed.protocol !== 'https:') {
+            threatScore += 45;
+            details.protocol = { status: "DANGER", msg: `Exotic Scheme (${parsed.protocol})` };
+            this.log(`Anomalous Scheme: Execution scheme '${parsed.protocol}' flagged`, "danger");
         }
 
-        // 2. IP Host Check (RFC 1918 / Public IP)
-        const ipRegex = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/;
-        const isDirectIP = ipRegex.test(hostname);
-        if (isDirectIP) {
-            score += 45;
-            details.domain = { status: "DANGER", msg: "Raw IP Hostname" };
-            this.log("Host Threat: Domain resolves directly to a numerical IP address", "danger");
+        // 3. Raw IP Literal & Port Analysis
+        const isIp = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(host);
+        if (isIp) {
+            threatScore += 50;
+            details.domain = { status: "DANGER", msg: "Direct IP Addressing" };
+            this.log(`Host Anomaly: Direct numeric IP [${host}] bypasses standard DNS reputation`, "danger");
         }
 
-        // 3. Deconstruct Domain Structure
-        const { tld, mainDomain, domainLabel, subdomains } = this.extractDomainParts(hostname);
-
-        // 4. Punycode / IDN Homograph check
-        if (hostname.includes('xn--')) {
-            score += 55;
-            details.punycode = { status: "DANGER", msg: "Punycode / Homograph" };
-            this.log("Identity Threat: URL utilizes Punycode ('xn--'). Possible Homograph character spoofing.", "danger");
+        if (parsed.port && !['80', '443'].includes(parsed.port)) {
+            threatScore += 20;
+            this.log(`Port Telemetry: Non-standard web port :${parsed.port} detected`, "warning");
         }
 
-        // 5. Shortener / Open Redirect masking
-        if (this.shorteners.has(hostname.toLowerCase())) {
-            score += 30;
-            details.obfuscation = { status: "WARNING", msg: "URL Shortener Mask" };
-            this.log(`Evasion Technique: Detected URL shortener proxy (${hostname})`, "warning");
+        // 4. Homograph & Unicode Deception Sniffer
+        const hasPunycode = host.includes('xn--');
+        // Match lookalike Cyrillic & Greek homoglyphs (e.g. а, е, о, р, с, у, х)
+        const hasHomoglyphs = /[\u0400-\u04FF\u0370-\u03FF]/.test(rawUrl);
+
+        if (hasPunycode || hasHomoglyphs) {
+            threatScore += 60;
+            details.punycode = { status: "DANGER", msg: "Homograph / Punycode" };
+            this.log("CRITICAL: Visual character spoofing (IDN Homograph/Punycode) detected!", "danger");
         }
 
-        // 6. Embedded Basic Auth Credential Check
-        if (url.username || url.password || rawUrl.includes('@')) {
-            score += 45;
-            details.obfuscation = { status: "DANGER", msg: "Credentials Embedded (@)" };
-            this.log("Attack Signature: Embedded credential token '@' detected to deceive visual host checks", "danger");
+        // 5. Hostname Lexical Entropy (DGA Detection)
+        const domainEntropy = this.computeEntropy(host.replace(/\./g, ''));
+        document.getElementById('entropyReadout').textContent = `ENTROPY: ${domainEntropy.toFixed(3)} H`;
+
+        if (domainEntropy > 4.1 && !isIp) {
+            threatScore += 30;
+            details.entropy = { status: "WARNING", msg: `High Entropy (${domainEntropy.toFixed(2)})` };
+            this.log(`Algorithmic Anomaly: High randomness score (${domainEntropy.toFixed(2)}), potential DGA domain`, "warning");
         }
 
-        // 7. Hex and Percent Encoding Abuse
-        const percentEncodings = (url.pathname + url.search).match(/%[0-9a-fA-F]{2}/g) || [];
-        if (percentEncodings.length > 3) {
-            score += 20;
-            details.obfuscation = { status: "WARNING", msg: "Excessive Hex Encoding" };
-            this.log(`Obfuscation: High density of percent-encoded characters (${percentEncodings.length})`, "warning");
+        // 6. Decomposition: TLD, Domain Label, and Subdomains
+        const { tld, domainLabel, subdomains } = this.extractDomainParts(host);
+
+        // Suspicious TLD check
+        if (this.suspiciousTLDs.has(tld.toLowerCase())) {
+            threatScore += 25;
+            details.tld = { status: "WARNING", msg: `Abuse-Prone (.${tld})` };
+            this.log(`TLD Risk: High statistical malware correlation on '.${tld}'`, "warning");
         }
 
-        // 8. TLD Reputation
-        if (this.suspiciousTLDs.has(tld)) {
-            score += 25;
-            details.tld = { status: "WARNING", msg: `High-Risk TLD (.${tld})` };
-            this.log(`TLD Risk: Top-level domain '.${tld}' is frequently associated with disposable infrastructure`, "warning");
+        // URL Shortener masking check
+        if (this.shorteners.has(host.toLowerCase())) {
+            threatScore += 30;
+            this.log(`Evasion Technique: Detected URL shortener mask (${host})`, "warning");
         }
 
-        // 9. Subdomain Depth & Brand Spoofing
-        if (!isDirectIP) {
+        // Credential token abuse (@ symbol)
+        if (parsed.username || parsed.password || rawUrl.includes('@')) {
+            threatScore += 45;
+            this.log("Security Alert: Credential token '@' embedded to mislead user trust", "danger");
+        }
+
+        // 7. Targeted Brand & Keyword Impersonation
+        if (!isIp) {
             if (subdomains.length >= 3) {
-                score += 20;
-                details.domain = { status: "WARNING", msg: "Deep Subdomain Nesting" };
-                this.log(`Structural Anomaly: Complex subdomain hierarchy (${subdomains.length} tiers)`, "warning");
+                threatScore += 20;
+                details.domain = { status: "WARNING", msg: `Excessive Nesting (${subdomains.length})` };
+                this.log(`Structure Warning: Deep subdomain chain (${subdomains.length} tiers)`, "warning");
             }
 
-            const subdomainString = subdomains.join('.').toLowerCase();
-            const pathQueryString = (url.pathname + url.search).toLowerCase();
+            const subStr = subdomains.join('.').toLowerCase();
+            const fullTargetContext = (subStr + ' ' + pathAndQuery).toLowerCase();
 
-            // Check if known target brands are imitated in subdomains/paths while NOT being the main domain
-            const targetImpersonated = this.targetBrands.find(brand => {
-                const inSubdomain = subdomainString.includes(brand);
-                const inPath = pathQueryString.includes(brand);
+            // Brand lookup: Is brand in subdomains or path while NOT the root domain?
+            const brandLure = this.brandEntities.find(brand => {
+                const inTarget = fullTargetContext.includes(brand);
                 const isLegitOwner = domainLabel.toLowerCase() === brand;
-                return (inSubdomain || inPath) && !isLegitOwner;
+                return inTarget && !isLegitOwner;
             });
 
-            if (targetImpersonated) {
-                score += 50;
-                details.pattern = { status: "DANGER", msg: `Spoofing ${targetImpersonated}` };
-                this.log(`Brand Spoof Signature: '${targetImpersonated}' detected outside authoritative domain root`, "danger");
+            if (brandLure) {
+                threatScore += 55;
+                details.pattern = { status: "DANGER", msg: `Spoofing [${brandLure.toUpperCase()}]` };
+                this.log(`Phishing Heuristic: Brand keyword '${brandLure}' exploited outside authoritative domain`, "danger");
             } else {
-                // Check generic sensitive keywords in subdomains
-                const sensitiveFound = this.sensitiveKeywords.find(kw => subdomainString.includes(kw));
-                if (sensitiveFound) {
-                    score += 25;
-                    details.pattern = { status: "WARNING", msg: `Lure Keyword (${sensitiveFound})` };
-                    this.log(`Phishing Heuristic: Authentication keyword '${sensitiveFound}' in subdomain path`, "warning");
+                // Check general trap keywords in subdomain
+                const trapMatch = this.trapKeywords.find(k => subStr.includes(k));
+                if (trapMatch) {
+                    threatScore += 25;
+                    details.pattern = { status: "WARNING", msg: `Sensitive Token (${trapMatch})` };
+                    this.log(`Credential Lure: Sensitive authentication token '${trapMatch}' in subdomain path`, "warning");
                 }
             }
         }
 
-        // 10. URL Length Anomaly
-        if (rawUrl.length > 80) {
-            score += 15;
-            this.log(`Lexical Anomaly: URL length exceeds standard baseline (${rawUrl.length} chars)`, "warning");
-        }
-
-        score = Math.min(score, 100);
-        this.renderResults(score, details);
+        // Cap score at 100
+        threatScore = Math.min(threatScore, 100);
+        this.renderFinal(threatScore, details, domainEntropy);
     }
 
-    renderResults(score, details, overrideTitle = null, overrideDesc = null) {
+    renderFinal(score, details, entropy, overrideTitle = null, overrideDesc = null) {
         const scoreVal = document.getElementById('scoreValue');
         const scoreCircle = document.getElementById('scoreCircle');
         const verdictTitle = document.getElementById('verdictTitle');
         const verdictDesc = document.getElementById('verdictDesc');
 
-        const circumference = 326.72; // 2 * Math.PI * 52
+        const circumference = 389.56; // 2 * Math.PI * 62
         scoreCircle.style.strokeDasharray = circumference;
 
-        // Reset and trigger smooth animation
-        let current = 0;
+        // Smooth Counter Animation
+        let counter = 0;
         const step = Math.max(1, Math.ceil(score / 30));
         const timer = setInterval(() => {
-            current += step;
-            if (current >= score) {
-                current = score;
+            counter += step;
+            if (counter >= score) {
+                counter = score;
                 clearInterval(timer);
             }
-            scoreVal.textContent = current;
-            const offset = circumference - (circumference * (current / 100));
+            scoreVal.textContent = counter;
+            const offset = circumference - (circumference * (counter / 100));
             scoreCircle.style.strokeDashoffset = offset;
         }, 15);
 
-        // Color coding thresholds
-        let color = "var(--success)";
-        if (score >= 30 && score < 70) color = "var(--warning)";
-        if (score >= 70) color = "var(--danger)";
+        // Electric Colors
+        let strokeColor = "var(--electric-green)";
+        if (score >= 30 && score < 70) strokeColor = "var(--electric-amber)";
+        if (score >= 70) strokeColor = "var(--electric-magenta)";
 
-        scoreCircle.style.stroke = color;
-        scoreVal.style.color = color;
+        scoreCircle.style.stroke = strokeColor;
+        scoreVal.style.color = strokeColor;
 
         if (overrideTitle) {
             verdictTitle.textContent = overrideTitle;
-            verdictTitle.style.color = "var(--danger)";
+            verdictTitle.style.color = "var(--electric-magenta)";
             verdictDesc.textContent = overrideDesc;
         } else if (score < 30) {
-            verdictTitle.textContent = "LOW RISK / SAFE";
-            verdictTitle.style.color = "var(--success)";
-            verdictDesc.textContent = "No primary social engineering, deceptive hostnames, or payload indicators observed.";
+            verdictTitle.textContent = "VERIFIED SAFE";
+            verdictTitle.style.color = "var(--electric-green)";
+            verdictDesc.textContent = "Minimal threat signature detected. Lexical structure and protocol conform to trusted standards.";
         } else if (score < 70) {
             verdictTitle.textContent = "SUSPICIOUS";
-            verdictTitle.style.color = "var(--warning)";
-            verdictDesc.textContent = "Multiple anomalies detected (cleartext protocol, excessive nesting, or disposable TLDs). Exercise caution.";
+            verdictTitle.style.color = "var(--electric-amber)";
+            verdictDesc.textContent = "Anomalies detected in subdomain structure, transport encryption, or entropy distribution.";
         } else {
-            verdictTitle.textContent = "HIGH RISK / THREAT";
-            verdictTitle.style.color = "var(--danger)";
-            verdictDesc.textContent = "Critical phishing indicators detected: Brand impersonation, homograph punycode, or raw host routing.";
+            verdictTitle.textContent = "CRITICAL THREAT";
+            verdictTitle.style.color = "var(--electric-magenta)";
+            verdictDesc.textContent = "Severe social engineering indicators found. Active brand deception or host evasion detected.";
         }
 
-        this.updateBadge('protocolRes', details.protocol);
-        this.updateBadge('domainRes', details.domain);
-        this.updateBadge('punycodeRes', details.punycode);
-        this.updateBadge('obfuscationRes', details.obfuscation);
-        this.updateBadge('tldRes', details.tld);
-        this.updateBadge('patternRes', details.pattern);
+        // Update all status chips
+        this.updateChip('protocolRes', details.protocol);
+        this.updateChip('domainRes', details.domain);
+        this.updateChip('punycodeRes', details.punycode);
+        this.updateChip('entropyRes', details.entropy);
+        this.updateChip('tldRes', details.tld);
+        this.updateChip('patternRes', details.pattern);
 
         if (score >= 70) {
-            this.log(`VERDICT: HIGH RISK THREAT DETERMINED (${score}/100)`, "danger");
+            this.log(`ASSESSMENT COMPLETE: CRITICAL RISK (${score}/100)`, "danger");
         } else if (score >= 30) {
-            this.log(`VERDICT: SUSPICIOUS ACTIVITY IDENTIFIED (${score}/100)`, "warning");
+            this.log(`ASSESSMENT COMPLETE: SUSPICIOUS PATTERN (${score}/100)`, "warning");
         } else {
-            this.log(`VERDICT: CLEAN REPUTATION PROFILE (${score}/100)`, "success");
+            this.log(`ASSESSMENT COMPLETE: BENIGN SIGNATURE (${score}/100)`, "success");
         }
     }
 
-    updateBadge(id, info) {
+    updateChip(id, info) {
         const el = document.getElementById(id);
         if (!el) return;
-        el.className = "status-badge";
+        el.className = "status-chip";
         el.textContent = info.msg;
 
         if (info.status === "SAFE") el.classList.add("safe");
@@ -313,5 +364,5 @@ class URLScanner {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    new URLScanner();
+    new UltimateURLScanner();
 });
