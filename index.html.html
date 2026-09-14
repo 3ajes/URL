@@ -3,104 +3,154 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sentry URL | Phishing & Social Engineering Detector</title>
+    <title>SENTRY.IO // Ultimate Cyber-Electric URL Threat Scanner</title>
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Share+Tech+Mono&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="script.js" defer></script>
 </head>
 <body>
-    <div class="background-grid" aria-hidden="true"></div>
-    <div class="scan-line" aria-hidden="true"></div>
+    <div class="electric-grid" aria-hidden="true"></div>
+    <div class="voltage-glow" aria-hidden="true"></div>
+    <div class="laser-scanner" aria-hidden="true"></div>
 
-    <main class="container">
-        <header class="hero">
-            <div class="logo-container">
-                <div class="logo-icon" aria-hidden="true"></div>
-                <h1>SENTRY<span class="highlight">URL</span></h1>
+    <main class="hud-container">
+        <header class="hud-header">
+            <div class="cyber-badge">
+                <span class="pulse-dot"></span>
+                DEFENSE PROTOCOL // HEURISTIC CORE v4.8
             </div>
-            <p class="subtitle">Multi-Vector Heuristic Analysis & Social Engineering Detection Engine</p>
+            <h1 class="glitch-title">
+                SENTRY<span class="neon-electric">URL</span>
+            </h1>
+            <p class="sub-header">Zero-Trust Realtime Lexical & Homograph Threat Assessment System</p>
         </header>
 
-        <section class="scanner-section" aria-label="URL Input Area">
-            <div class="input-wrapper">
-                <div class="input-icon" aria-hidden="true">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="11" cy="11" r="8"></circle>
-                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                    </svg>
-                </div>
+        <!-- Scanner Section -->
+        <section class="scanner-module" aria-label="Target Acquisition Area">
+            <div class="input-chassis">
+                <div class="terminal-tag">TARGET://</div>
                 <input 
                     type="text" 
                     id="urlInput" 
-                    placeholder="Enter URL to analyze (e.g. http://login.paypal.com.account-verify.net)" 
+                    placeholder="Input target URL (e.g. http://login.paypal.com.verify-access.top/auth)" 
                     autocomplete="off" 
                     spellcheck="false"
-                    aria-label="URL to inspect"
                 >
-                <button id="scanBtn" class="scan-btn" type="button">ANALYZE</button>
+                <button id="scanBtn" class="volt-btn" type="button">
+                    <span class="btn-text">ENGAGE SCAN</span>
+                    <span class="btn-flare"></span>
+                </button>
             </div>
-            
-            <div id="loader" class="loader-container hidden" aria-live="polite">
-                <div class="loader">
-                    <div class="scanner-bar"></div>
+
+            <!-- Quick Payload Attack Launchers -->
+            <div class="preset-triggers">
+                <span class="preset-label">LOAD ATTACK SIGNATURE:</span>
+                <div class="preset-pills">
+                    <button class="preset-btn" data-url="http://secure.login.paypal.com.account-verify.top">Subdomain Brand Phish</button>
+                    <button class="preset-btn" data-url="https://xn--pypal-4ve.com/signin">Punycode Homograph</button>
+                    <button class="preset-btn" data-url="http://192.168.1.105:8080/payload.bin">Direct IP + Unsafe Port</button>
+                    <button class="preset-btn" data-url="https://auth.google.com@malicious-node.xyz/update">Credential Token (@)</button>
+                    <button class="preset-btn" data-url="https://github.com">Clean Verified HTTPS</button>
                 </div>
-                <div class="decoding-text">RUNNING MULTI-VECTOR HEURISTIC EVALUATION...</div>
+            </div>
+
+            <!-- Scanning State Bar -->
+            <div id="loader" class="loader-module hidden" aria-live="polite">
+                <div class="flux-bar">
+                    <div class="flux-beam"></div>
+                </div>
+                <div class="diagnostics-text">
+                    <span class="text-flicker">DISSECTING LEXICAL STRATA & HOMOGRAPH CHARACTERS...</span>
+                </div>
             </div>
         </section>
 
-        <section id="results" class="results-section hidden" aria-live="polite">
-            <div class="score-card">
-                <div class="score-ring-container">
-                    <svg class="score-ring" width="120" height="120" viewBox="0 0 120 120">
-                        <circle class="score-orbit" stroke="currentColor" stroke-width="6" fill="transparent" r="52" cx="60" cy="60" />
-                        <circle id="scoreCircle" class="score-value-ring" stroke="currentColor" stroke-width="8" stroke-linecap="round" fill="transparent" r="52" cx="60" cy="60" />
+        <!-- Threat Telemetry Results -->
+        <section id="results" class="results-module hidden" aria-live="polite">
+            <div class="telemetry-deck">
+                <!-- Gauge Circle -->
+                <div class="gauge-pod">
+                    <svg class="hud-ring" width="150" height="150" viewBox="0 0 150 150">
+                        <circle class="ring-track" stroke-width="8" fill="transparent" r="62" cx="75" cy="75" />
+                        <circle id="scoreCircle" class="ring-arc" stroke-width="10" stroke-linecap="round" fill="transparent" r="62" cx="75" cy="75" />
                     </svg>
-                    <div class="score-text">
-                        <span id="scoreValue">0</span>
-                        <span class="score-label">RISK SCORE</span>
+                    <div class="gauge-center">
+                        <span id="scoreValue" class="gauge-digits">0</span>
+                        <span class="gauge-sub">THREAT INDEX</span>
                     </div>
                 </div>
-                <div class="verdict-container">
-                    <h2 id="verdictTitle">ANALYZING</h2>
-                    <p id="verdictDesc">Evaluating domain entropy, punycode spoofing, and lexical distribution...</p>
+
+                <!-- Threat Synopsis -->
+                <div class="verdict-banner">
+                    <div class="banner-top">
+                        <span class="tag-status">VERDICT CLASSIFICATION</span>
+                        <span id="entropyReadout" class="tag-entropy">ENTROPY: 0.000 H</span>
+                    </div>
+                    <h2 id="verdictTitle">SECURE</h2>
+                    <p id="verdictDesc">Host exhibits normal lexicographical entropy with uncompromised protocol alignment.</p>
                 </div>
             </div>
 
-            <div class="details-grid">
-                <div class="detail-card">
-                    <h3>Protocol Security</h3>
-                    <div id="protocolRes" class="status-badge pending">PENDING</div>
+            <!-- Detailed Threat Cards -->
+            <div class="vector-grid">
+                <div class="vector-card">
+                    <div class="card-icon">&#9889;</div>
+                    <div class="card-meta">
+                        <h4>Transport Security</h4>
+                        <div id="protocolRes" class="status-chip pending">PENDING</div>
+                    </div>
                 </div>
-                <div class="detail-card">
-                    <h3>Domain Structure</h3>
-                    <div id="domainRes" class="status-badge pending">PENDING</div>
+
+                <div class="vector-card">
+                    <div class="card-icon">&#9776;</div>
+                    <div class="card-meta">
+                        <h4>Host Architecture</h4>
+                        <div id="domainRes" class="status-chip pending">PENDING</div>
+                    </div>
                 </div>
-                <div class="detail-card">
-                    <h3>Homograph & Punycode</h3>
-                    <div id="punycodeRes" class="status-badge pending">PENDING</div>
+
+                <div class="vector-card">
+                    <div class="card-icon">&#9888;</div>
+                    <div class="card-meta">
+                        <h4>Homograph / Punycode</h4>
+                        <div id="punycodeRes" class="status-chip pending">PENDING</div>
+                    </div>
                 </div>
-                <div class="detail-card">
-                    <h3>Obfuscation & Redirects</h3>
-                    <div id="obfuscationRes" class="status-badge pending">PENDING</div>
+
+                <div class="vector-card">
+                    <div class="card-icon">&#9762;</div>
+                    <div class="card-meta">
+                        <h4>Entropy / DGA Vector</h4>
+                        <div id="entropyRes" class="status-chip pending">PENDING</div>
+                    </div>
                 </div>
-                <div class="detail-card">
-                    <h3>TLD Reputation</h3>
-                    <div id="tldRes" class="status-badge pending">PENDING</div>
+
+                <div class="vector-card">
+                    <div class="card-icon">&#128737;</div>
+                    <div class="card-meta">
+                        <h4>TLD Threat Profile</h4>
+                        <div id="tldRes" class="status-chip pending">PENDING</div>
+                    </div>
                 </div>
-                <div class="detail-card">
-                    <h3>Brand Impersonation</h3>
-                    <div id="patternRes" class="status-badge pending">PENDING</div>
+
+                <div class="vector-card">
+                    <div class="card-icon">&#127919;</div>
+                    <div class="card-meta">
+                        <h4>Brand Impersonation</h4>
+                        <div id="patternRes" class="status-chip pending">PENDING</div>
+                    </div>
                 </div>
             </div>
 
-            <div class="console-log-wrapper">
-                <div class="console-header">
-                    <span>Heuristic Inspection Log</span>
-                    <span class="blink">_</span>
+            <!-- Terminal Livefeed -->
+            <div class="terminal-shell">
+                <div class="shell-bar">
+                    <span class="shell-title">HEX & HEURISTIC ENGINE CONSOLE</span>
+                    <button id="copyReportBtn" class="shell-copy-btn">COPY FORENSIC LOG</button>
                 </div>
-                <ul id="consoleLog" class="console-list"></ul>
+                <ul id="consoleLog" class="shell-log"></ul>
             </div>
         </section>
     </main>
